@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mail, Lock, User } from "lucide-react"; // spelling galat tha tumhare code me
+import API from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -8,6 +10,7 @@ export default function Signup() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Signup | MyApp"; // `|` ka use galat tha
@@ -30,21 +33,36 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+      console.log("Attempting signup...");
+      const res = await API.post("/auth/signup", { 
+        username: name, 
+        email, 
+        password 
       });
 
+      console.log("Signup response:", res.data);
+
       const data = await res.json();
+
+       if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+        if (res.data.user) {
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        }
+
       if (!res.ok) {
         throw new Error(data.msg || "Signup failed"); // tumhare backend me error msg field `msg` hai
       }
 
-      alert("Signup Successful!");
-      window.location.href = "/login";
-    } catch (error) {
-      setError(error.message);
+       console.log("Token saved, navigating to dashboard");
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError("Signup successful but no token received. Please login.");
+        setTimeout(() => navigate("/login"), 2000);
+      }
+    }catch (error) {
+      console.error("Signup error:", err);
+      setError(err.response?.data?.msg || err.response?.data?.message || "Signup failed");
     } finally {
       setLoading(false);
     }

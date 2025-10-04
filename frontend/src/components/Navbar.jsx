@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import API from '../services/api';
 
 export default function Navbar({ onLogout }) {
-    const balance = 0; // You can pass this as prop if needed
+    const [balance, setBalance] = useState(0);
+    
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const res = await API.get("/user/balance");
+                setBalance(res.data.balance || 0);
+            } catch (err) {
+                console.error("Error fetching balance:", err);
+                setBalance(0);
+            }
+        };
+        fetchBalance();
+    }, []);
     
     return (
         <div className="flex items-center justify-between px-6 py-3 bg-gray-800 text-white border-b border-gray-700">

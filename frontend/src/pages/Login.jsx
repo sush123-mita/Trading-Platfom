@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {Mail , Lock} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import API from "../services/api";
 
 export default function Login(){
     const [email,setEmail]=useState("");
     const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
+const navigate = useNavigate();
   
   useEffect(() => {
     document.title = "Login | MyApp"; // Page title
@@ -27,23 +29,30 @@ export default function Login(){
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await API.post("/auth/login", { email, password });
 
+      console.log("Login response:", res.data);
       const data = await res.json();
+
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+        if (res.data.user) {
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        }
+
+         console.log("Token saved, navigating to dashboard");
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError("No token received from server");
+      }
 
       if (!res.ok) {
         throw new Error(data.message || "Login failed");
       }
-
-      localStorage.setItem("token", data.token); // store JWT
-      alert("Login successful ✅");
       // redirect user here e.g. window.location.href = "/dashboard";
     } catch (err) {
-      setError(err.message);
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
